@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
-import 'package:vibrant_commerce/components/widgets/social.dart';
 import 'package:vibrant_commerce/screens/auth/login.dart';
-import 'package:vibrant_commerce/screens/auth/register.dart';
 
 class ForgotPassword extends StatelessWidget {
   const ForgotPassword({super.key});
