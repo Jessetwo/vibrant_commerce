@@ -3,6 +3,7 @@ import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
 import 'package:vibrant_commerce/components/widgets/social.dart';
+import 'package:vibrant_commerce/screens/auth/forgot_password.dart';
 import 'package:vibrant_commerce/screens/auth/register.dart';
 
 class Login extends StatelessWidget {
@@ -66,12 +67,22 @@ class Login extends StatelessWidget {
                         onTap: () {
                           // Handle forgot password action
                         },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            color: AppColors.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ForgotPassword(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ),
