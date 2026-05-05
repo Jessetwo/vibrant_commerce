@@ -5,6 +5,7 @@ import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
 import 'package:vibrant_commerce/components/widgets/social.dart';
 import 'package:vibrant_commerce/screens/auth/forgot_password.dart';
 import 'package:vibrant_commerce/screens/auth/register.dart';
+import 'package:vibrant_commerce/screens/main_screens/home_page.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -91,7 +92,14 @@ class Login extends StatelessWidget {
                   const SizedBox(height: 24),
                   MyButton(
                     title: 'Sign In',
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                      );
+                    },
                     color: AppColors.primaryColor,
                   ),
                   const SizedBox(height: 24),

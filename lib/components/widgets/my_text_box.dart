@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MyTextBox extends StatelessWidget {
-  final String title;
+  final String? title;
   final String hintText;
   final IconData prefixIcon;
   final bool? obscureText;
@@ -14,7 +14,7 @@ class MyTextBox extends StatelessWidget {
     this.obscureText,
     this.suffixIcon,
     this.controller,
-    required this.title,
+    this.title,
   });
 
   @override
@@ -23,7 +23,7 @@ class MyTextBox extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          title ?? '',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
