@@ -5,7 +5,7 @@ import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
 import 'package:vibrant_commerce/components/widgets/social.dart';
 import 'package:vibrant_commerce/screens/auth/forgot_password.dart';
 import 'package:vibrant_commerce/screens/auth/register.dart';
-import 'package:vibrant_commerce/screens/main_screens/home_page.dart';
+import 'package:vibrant_commerce/screens/main_screens/main_screen.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -93,10 +93,10 @@ class Login extends StatelessWidget {
                   MyButton(
                     title: 'Sign In',
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const HomePage(),
+                          builder: (context) => const MainScreen(),
                         ),
                       );
                     },
