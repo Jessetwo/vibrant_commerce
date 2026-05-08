@@ -8,14 +8,24 @@ class CartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.tertiaryColor,
-      appBar: AppBar(
-        title: const Text('My Cart'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.neutralColor,
-      ),
-      body: const Center(
-        child: Text('Cart Page Placeholder'),
+
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Shopping Cart',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'You have 3 items in your cart',
+                style: TextStyle(fontSize: 16, color: Color(0xff757682)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
