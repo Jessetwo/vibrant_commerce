@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
+import 'package:vibrant_commerce/components/widgets/cart.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -23,6 +24,8 @@ class CartPage extends StatelessWidget {
                 'You have 3 items in your cart',
                 style: TextStyle(fontSize: 16, color: Color(0xff757682)),
               ),
+              const SizedBox(height: 24),
+              Cart(),
             ],
           ),
         ),
