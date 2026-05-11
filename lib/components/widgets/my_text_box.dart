@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 class MyTextBox extends StatelessWidget {
   final String? title;
   final String hintText;
-  final IconData prefixIcon;
+  final IconData? prefixIcon;
   final bool? obscureText;
   final IconData? suffixIcon;
   final TextEditingController? controller;
   const MyTextBox({
     super.key,
     required this.hintText,
-    required this.prefixIcon,
+    this.prefixIcon,
     this.obscureText,
     this.suffixIcon,
     this.controller,

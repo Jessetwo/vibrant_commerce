@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
 class Cart extends StatelessWidget {
-  const Cart({super.key});
+  final String title;
+  final String size;
+  final String imagePath;
+  final String price;
+  const Cart({
+    super.key,
+    required this.title,
+    required this.size,
+    required this.imagePath,
+    required this.price,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +37,7 @@ class Cart extends StatelessWidget {
             height: 94,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image: AssetImage('assets/images/shoe.png'),
-              ),
+              image: DecorationImage(image: AssetImage(imagePath)),
             ),
           ),
           const SizedBox(width: 16),
@@ -37,7 +45,7 @@ class Cart extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Velocity Nitro Pro',
+                title,
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
               Text(
@@ -48,7 +56,7 @@ class Cart extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '\$129.00',
+                    price,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(width: 24),
