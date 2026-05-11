@@ -3,6 +3,7 @@ import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/components/widgets/catergory_box.dart';
 import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
 import 'package:vibrant_commerce/components/widgets/product_card.dart';
+import 'package:vibrant_commerce/screens/main_screens/product_details.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -214,13 +215,20 @@ class HomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ProductCard(
+                      ontap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetails(),
+                          ),
+                        );
+                      },
                       title: 'Pro Sound',
-                      Price: '\$299.00',
+                      price: '\$299.00',
                       imagePath: 'assets/images/headphone.png',
                     ),
                     ProductCard(
                       title: 'Smart Watch',
-                      Price: '\$199.00',
+                      price: '\$199.00',
                       imagePath: 'assets/images/watch.png',
                     ),
                   ],
@@ -231,12 +239,12 @@ class HomePage extends StatelessWidget {
                   children: [
                     ProductCard(
                       title: 'Aero-Max Runners',
-                      Price: '\$120.00',
+                      price: '\$120.00',
                       imagePath: 'assets/images/shoe.png',
                     ),
                     ProductCard(
                       title: 'Velvet Amber…',
-                      Price: '\$75.00',
+                      price: '\$75.00',
                       imagePath: 'assets/images/perfume.png',
                     ),
                   ],
