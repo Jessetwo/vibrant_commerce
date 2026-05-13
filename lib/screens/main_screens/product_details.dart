@@ -281,6 +281,57 @@ class ProductDetails extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(16),
+
+                height: 89,
+                decoration: BoxDecoration(
+                  color: Color(0xffFFFFFF),
+                  border: Border.all(color: Color(0xffF1F5F9)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xffF1F5F9), width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 2,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(child: Icon(Icons.shopping_bag)),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 290,
+                      height: 56,
+
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'ADD TO CART',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.shopping_bag, color: Colors.white),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

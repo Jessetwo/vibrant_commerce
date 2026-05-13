@@ -44,7 +44,10 @@ class Testimonial extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: TextStyle(fontSize: 16)),
+                  Text(
+                    name,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                   Row(
                     children: [
                       Icon(Icons.star_rate, color: Color(0xff904D00), size: 16),

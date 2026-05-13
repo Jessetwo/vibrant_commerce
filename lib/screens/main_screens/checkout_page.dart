@@ -1,0 +1,139 @@
+import 'package:flutter/material.dart';
+import 'package:vibrant_commerce/components/assets/app_colors.dart';
+
+class CheckOutPage extends StatelessWidget {
+  const CheckOutPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.tertiaryColor,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            children: [
+              //app bar
+              Row(
+                children: [
+                  Icon(Icons.arrow_back_ios),
+                  const SizedBox(width: 100),
+                  Text(
+                    'Checkout',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              //containers
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    height: 85,
+                    width: 114,
+
+                    decoration: BoxDecoration(
+                      color: Color(0xff002366).withOpacity(0.20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Color(0xff002366).withOpacity(0.30),
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: AppColors.secondaryColor,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.check,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('SHIPPING'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  //payment
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    height: 85,
+                    width: 114,
+
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Color(0xff002366).withOpacity(0.30),
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.money, color: Colors.white),
+                          const SizedBox(height: 4),
+                          Text(
+                            'PAYMENT',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  //review
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    height: 85,
+                    width: 114,
+
+                    decoration: BoxDecoration(
+                      color: Color(0xff002366).withOpacity(0.20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Color(0xff002366).withOpacity(0.30),
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: AppColors.secondaryColor,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.check,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('SHIPPING'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

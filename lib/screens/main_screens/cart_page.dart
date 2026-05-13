@@ -3,6 +3,7 @@ import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/components/widgets/cart.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
+import 'package:vibrant_commerce/screens/main_screens/checkout_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -140,7 +141,11 @@ class CartPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 MyButton(
                   title: 'Proceed to Checkout',
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => CheckOutPage()),
+                    );
+                  },
                   color: AppColors.primaryColor,
                 ),
                 const SizedBox(height: 16),
