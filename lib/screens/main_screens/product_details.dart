@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
+import 'package:vibrant_commerce/components/widgets/testimonial.dart';
 
 class ProductDetails extends StatelessWidget {
   const ProductDetails({super.key});
@@ -238,6 +239,44 @@ class ProductDetails extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Reviews',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xff00113A),
+                          ),
+                        ),
+
+                        Text(
+                          'View All',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Testimonial(
+                      name: 'Marcus J',
+                      text:
+                          '"Best running shoes I\'ve owned. The energy return is noticeable from the first mile."',
+                      imagePath: 'assets/images/shoe.png',
+                    ),
+
+                    const SizedBox(height: 16),
+                    Testimonial(
+                      name: 'Sarah K',
+                      text:
+                          '"Incredible breathability for summer runs. True to size and looks fantastic in person!"',
+                      imagePath: 'assets/images/watch.png',
                     ),
                   ],
                 ),
