@@ -98,7 +98,7 @@ class CheckOutPage extends StatelessWidget {
                     width: 114,
 
                     decoration: BoxDecoration(
-                      color: Color(0xff002366).withOpacity(0.20),
+                      color: Color(0xffffffff),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Color(0xff002366).withOpacity(0.30),
@@ -107,28 +107,62 @@ class CheckOutPage extends StatelessWidget {
                     child: Center(
                       child: Column(
                         children: [
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(100),
-                              color: AppColors.secondaryColor,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.check,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                          Icon(Icons.rate_review, color: Color(0xffCBD5E1)),
                           const SizedBox(height: 4),
-                          Text('SHIPPING'),
+                          Text(
+                            'REVIEW',
+                            style: TextStyle(color: Color(0xff94A3B8)),
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: EdgeInsets.all(16),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Shipping Address',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Color(0xff00113A),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.add, size: 14, color: Color(0xff904D00)),
+                            Text(
+                              'ADD NEW',
+                              style: TextStyle(
+                                color: Color(0xff904D00),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
