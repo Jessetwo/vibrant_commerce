@@ -220,6 +220,53 @@ class CheckOutPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.secondaryColor.withOpacity(0.5),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.secondaryColor.withOpacity(0.05),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black),
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mountain Retreat',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.secondaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '123 Tech Avenue, Suite 400\n '
+                                'San Francisco, CA 94105\n'
+                                'United States',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
