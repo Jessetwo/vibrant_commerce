@@ -16,7 +16,12 @@ class CheckOutPage extends StatelessWidget {
               //app bar
               Row(
                 children: [
-                  Icon(Icons.arrow_back_ios),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Icon(Icons.arrow_back_ios),
+                  ),
                   const SizedBox(width: 100),
                   Text(
                     'Checkout',
@@ -160,6 +165,60 @@ class CheckOutPage extends StatelessWidget {
                           ],
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.secondaryColor.withOpacity(0.5),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.secondaryColor.withOpacity(0.05),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Home Office',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.secondaryColor,
+                                ),
+                              ),
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.black),
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    width: 15,
+                                    height: 15,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryColor,
+                                      borderRadius: BorderRadius.circular(100),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '123 Tech Avenue, Suite 400 '
+                            'San Francisco, CA 94105\n'
+                            'United States',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
