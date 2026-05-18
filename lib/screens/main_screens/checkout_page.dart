@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
-import 'package:vibrant_commerce/components/widgets/my_text_box.dart';
+import 'package:vibrant_commerce/components/widgets/my_button.dart';
 
 class CheckOutPage extends StatelessWidget {
   const CheckOutPage({super.key});
@@ -501,6 +501,153 @@ class CheckOutPage extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                Container(
+                  padding: EdgeInsets.all(16),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 2,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order Summary',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: AssetImage('assets/images/shoe.png'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pro-Speed Runners Gen 2',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Size: 10.5 | Color: Ember',
+                                style: TextStyle(
+                                  fontSize: 14,
+
+                                  color: Color(0xff64748B),
+                                ),
+                              ),
+                              Text(
+                                'N145',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Divider(color: Color(0xffF1F5F9)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Subtotal', style: TextStyle(fontSize: 16)),
+                          Text('N145', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Shipping', style: TextStyle(fontSize: 16)),
+                          Text(
+                            'FREE',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Tax', style: TextStyle(fontSize: 16)),
+                          Text('N14', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Divider(),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'N171',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      MyButton(
+                        title: 'Place Order',
+                        onPressed: () {},
+                        color: AppColors.primaryColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/images/lock.png'),
+                          const SizedBox(width: 5),
+                          Text(
+                            'SECURE ENCRYPTED CHECKOUT',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Color(0xff94A3B8),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
