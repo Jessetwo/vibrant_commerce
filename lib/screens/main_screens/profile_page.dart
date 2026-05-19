@@ -39,6 +39,11 @@ class ProfilePage extends StatelessWidget {
                   'Alex Johnson',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                 ),
+
+                Text(
+                  'alex.johnson@example.com',
+                  style: TextStyle(fontSize: 16),
+                ),
               ],
             ),
           ),
