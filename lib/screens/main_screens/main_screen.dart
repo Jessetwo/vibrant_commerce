@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/screens/main_screens/cart_page.dart';
+import 'package:vibrant_commerce/screens/main_screens/create_new.dart';
 import 'package:vibrant_commerce/screens/main_screens/home_page.dart';
 import 'package:vibrant_commerce/screens/main_screens/orders_page.dart';
 import 'package:vibrant_commerce/screens/main_screens/profile_page.dart';
@@ -31,15 +32,12 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Action for create new product
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create New Product clicked')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CreateNew()),
           );
         },
         backgroundColor: AppColors.primaryColor,
@@ -162,7 +160,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
