@@ -7,6 +7,8 @@ class MyTextBox extends StatelessWidget {
   final bool? obscureText;
   final IconData? suffixIcon;
   final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   const MyTextBox({
     super.key,
     required this.hintText,
@@ -15,6 +17,8 @@ class MyTextBox extends StatelessWidget {
     this.suffixIcon,
     this.controller,
     this.title,
+    this.onChanged,
+    this.onSubmitted,
   });
 
   @override
@@ -38,7 +42,8 @@ class MyTextBox extends StatelessWidget {
           child: TextField(
             controller: controller,
             obscureText: obscureText ?? false,
-
+            onChanged: onChanged,
+            onSubmitted: onSubmitted,
             decoration: InputDecoration(
               suffixIcon: Icon(suffixIcon, color: Colors.grey.withOpacity(0.6)),
               prefixIcon: Icon(prefixIcon, color: Colors.grey.withOpacity(0.6)),

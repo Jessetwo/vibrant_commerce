@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
+import 'package:vibrant_commerce/components/widgets/product_image.dart';
 
 class Orders extends StatelessWidget {
+  final String orderId;
+  final String date;
   final String status;
   final String items;
   final String price;
@@ -9,8 +12,11 @@ class Orders extends StatelessWidget {
   final Color statusColor;
   final Color statusTextColor;
   final String imagePath;
+
   const Orders({
     super.key,
+    required this.orderId,
+    required this.date,
     required this.items,
     required this.price,
     required this.status,
@@ -20,64 +26,71 @@ class Orders extends StatelessWidget {
     required this.imagePath,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       width: double.infinity,
-      height: 195,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: Offset(0, 1),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
+          // ─ Header row (Order ID / Date) ─
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Order ID',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
               ),
-
               Text(
-                'Order ID',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                'Date',
+                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
               ),
             ],
           ),
-
+          const SizedBox(height: 2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('#ORD-12345', style: TextStyle(fontSize: 16)),
-
-              Text('Oct 24, 2023', style: TextStyle(fontSize: 16)),
+              Text(
+                '#${orderId.length > 10 ? orderId.substring(orderId.length - 10) : orderId}',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                date,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
-          Divider(thickness: 0.5),
-          const SizedBox(height: 16),
-          //info row
+          const Divider(thickness: 0.5, height: 20),
+
+          // ─ Info row ─
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 78,
-                    height: 78,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(
-                        image: AssetImage(imagePath),
+                  // Product image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 78,
+                      height: 78,
+                      child: ProductImage(
+                        imagePath: imagePath,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -86,21 +99,22 @@ class Orders extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Status pill
                       Container(
-                        width: 110,
-                        height: 20,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(99),
                           color: color,
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(100),
+                                shape: BoxShape.circle,
                                 color: statusColor,
                               ),
                             ),
@@ -109,30 +123,44 @@ class Orders extends StatelessWidget {
                               status,
                               style: TextStyle(
                                 color: statusTextColor,
-                                fontSize: 14,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Text(items, style: TextStyle(fontSize: 16)),
-                      Text(price, style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 6),
+                      Text(
+                        items,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        price,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ],
               ),
+
+              // Details arrow
               Row(
                 children: [
                   Text(
                     'Details',
                     style: TextStyle(
                       color: AppColors.primaryColor,
-                      fontSize: 16,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Icon(
                     Icons.arrow_forward_ios,
-                    size: 14,
+                    size: 12,
                     color: AppColors.primaryColor,
                   ),
                 ],
