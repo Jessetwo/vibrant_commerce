@@ -33,10 +33,10 @@ class OrderItem {
     return OrderItem(
       product: prodId,
       name: json['name'] ?? '',
-      price: (json['price'] ?? 0.0) is int
-          ? (json['price'] as int).toDouble()
-          : (json['price'] ?? 0.0).toDouble(),
-      quantity: json['quantity'] ?? 0,
+      price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
+      quantity: json['quantity'] is String 
+          ? (int.tryParse(json['quantity']) ?? 0) 
+          : (json['quantity'] ?? 0),
       image: img,
     );
   }
@@ -47,6 +47,7 @@ class OrderItem {
       'name': name,
       'price': price,
       'quantity': quantity,
+      'qty': quantity,
       if (image != null) 'image': image,
     };
   }
@@ -83,9 +84,16 @@ class Order {
         ? itemsList.map((i) => OrderItem.fromJson(i)).toList()
         : [];
 
+    String userId = '';
+    if (json['user'] is Map<String, dynamic>) {
+      userId = json['user']['_id'] ?? json['user']['id'] ?? '';
+    } else {
+      userId = json['user']?.toString() ?? '';
+    }
+
     return Order(
       id: json['_id'] ?? json['id'] ?? '',
-      user: json['user'] ?? '',
+      user: userId,
       items: parsedItems,
       shippingAddress: json['shippingAddress'] != null
           ? Address.fromJson(json['shippingAddress'])
@@ -96,9 +104,7 @@ class Order {
               zipCode: '',
               country: '',
             ),
-      totalPrice: (json['totalPrice'] ?? 0.0) is int
-          ? (json['totalPrice'] as int).toDouble()
-          : (json['totalPrice'] ?? 0.0).toDouble(),
+      totalPrice: double.tryParse(json['totalPrice']?.toString() ?? '0') ?? 0.0,
       paymentStatus: json['paymentStatus'] ?? 'pending',
       paymentReference: json['paymentReference'],
       orderStatus: json['orderStatus'] ?? 'processing',

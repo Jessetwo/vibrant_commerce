@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/models/cart.dart';
 import 'package:vibrant_commerce/models/order.dart';
+import 'package:vibrant_commerce/models/product.dart';
 import 'package:vibrant_commerce/models/user.dart';
 import 'package:vibrant_commerce/providers/auth_provider.dart';
 import 'package:vibrant_commerce/providers/cart_provider.dart';
 import 'package:vibrant_commerce/providers/order_provider.dart';
 import 'package:vibrant_commerce/providers/notification_provider.dart';
+import 'package:vibrant_commerce/providers/product_provider.dart';
 import 'package:vibrant_commerce/screens/main_screens/main_screen.dart';
-
-
 
 class CheckOutPage extends StatefulWidget {
   const CheckOutPage({super.key});
@@ -61,7 +61,6 @@ class _CheckOutPageState extends State<CheckOutPage> {
   }
 
   Future<void> _handlePlaceOrder() async {
-    // Capture all context-dependent refs BEFORE any await
     final auth = context.read<AuthProvider>();
     final cartProvider = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
@@ -71,13 +70,37 @@ class _CheckOutPageState extends State<CheckOutPage> {
       return;
     }
 
-    final street = _streetCtrl.text.trim();
-    final city = _cityCtrl.text.trim();
-    final state = _stateCtrl.text.trim();
-    final zip = _zipCtrl.text.trim();
-    final country = _countryCtrl.text.trim();
+    final currentUser = auth.currentUser;
+    Address? defaultAddress;
+    if (currentUser != null && currentUser.addresses.isNotEmpty) {
+      try {
+        defaultAddress = currentUser.addresses.firstWhere((a) => a.isDefault);
+      } catch (e) {
+        defaultAddress = currentUser.addresses.first;
+      }
+    }
 
-    if (street.isEmpty || city.isEmpty || state.isEmpty || zip.isEmpty || country.isEmpty) {
+    String street, city, state, zip, country;
+
+    if (defaultAddress != null) {
+      street = defaultAddress.street;
+      city = defaultAddress.city;
+      state = defaultAddress.state;
+      zip = defaultAddress.zipCode;
+      country = defaultAddress.country;
+    } else {
+      street = _streetCtrl.text.trim();
+      city = _cityCtrl.text.trim();
+      state = _stateCtrl.text.trim();
+      zip = _zipCtrl.text.trim();
+      country = _countryCtrl.text.trim();
+    }
+
+    if (street.isEmpty ||
+        city.isEmpty ||
+        state.isEmpty ||
+        zip.isEmpty ||
+        country.isEmpty) {
       _snack('Please fill in your complete shipping address.', Colors.orange);
       return;
     }
@@ -89,14 +112,42 @@ class _CheckOutPageState extends State<CheckOutPage> {
     }
 
     final token = auth.token!;
+    final productProvider = context.read<ProductProvider>();
+
+    Product? findFullProduct(String id) {
+      try {
+        return productProvider.products.firstWhere((p) => p.id == id);
+      } catch (_) {
+        try {
+          return productProvider.trendingProducts.firstWhere((p) => p.id == id);
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    final enrichedCartItems = cart.items.map((item) {
+      final full = findFullProduct(item.product.id);
+      if (full != null) {
+        return CartItem(
+          id: item.id,
+          product: full,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+        );
+      }
+      return item;
+    }).toList();
 
     // Step 1 — Build order items from cart
-    final orderItems = cart.items.map((ci) {
+    final orderItems = enrichedCartItems.map((ci) {
       return OrderItem(
         product: ci.product.id,
         name: ci.product.name,
         price: ci.product.price,
         quantity: ci.quantity,
+        image: ci.product.images.isNotEmpty ? ci.product.images.first : null,
       );
     }).toList();
 
@@ -108,7 +159,7 @@ class _CheckOutPageState extends State<CheckOutPage> {
       country: country,
     );
 
-    final total = _calcTotal(cart.items);
+    final total = _calcTotal(enrichedCartItems);
 
     // Step 2 — Create order in backend (which initializes payment)
     final order = await orderProvider.createOrder(
@@ -125,43 +176,30 @@ class _CheckOutPageState extends State<CheckOutPage> {
       return;
     }
 
-    // Step 3 — Launch native in-app browser and start auto-verification polling
+    // Step 3 — Launch native webview screen and start auto-verification polling
     final paymentUrl = orderProvider.paymentUrl;
     final reference = orderProvider.paymentReference;
 
     if (paymentUrl != null && reference != null) {
-      final uri = Uri.parse(paymentUrl);
-      bool browserOpen = false;
-      try {
-        browserOpen = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-      } catch (_) {
-        try {
-          browserOpen = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-        } catch (_) {}
-      }
-
-      if (!browserOpen) {
-        _snack('Could not open payment window automatically.', Colors.red);
-        return;
-      }
-
       if (!mounted) return;
 
       final notif = Provider.of<NotificationProvider>(context, listen: false);
       final buyerName = auth.currentUser?.name ?? 'A customer';
 
-      final paymentSuccess = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => _PaymentPollingDialog(
-          reference: reference,
-          token: token,
-          totalPrice: total,
-          cartItems: List.from(cart.items),
-          buyerName: buyerName,
-          orderProvider: orderProvider,
-          cartProvider: cartProvider,
-          notificationProvider: notif,
+      final paymentSuccess = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => PaymentWebViewScreen(
+            paymentUrl: paymentUrl,
+            reference: reference,
+            token: token,
+            totalPrice: total,
+            cartItems: List.from(enrichedCartItems),
+            buyerName: buyerName,
+            orderProvider: orderProvider,
+            cartProvider: cartProvider,
+            notificationProvider: notif,
+          ),
         ),
       );
 
@@ -176,10 +214,13 @@ class _CheckOutPageState extends State<CheckOutPage> {
           (route) => false,
         );
       } else {
-        _snack('Payment verification cancelled or incomplete.', Colors.orange);
+        _snack('Payment cancelled or incomplete.', Colors.orange);
       }
     } else {
-      _snack('No payment details returned from backend. Order created.', Colors.orange);
+      _snack(
+        'No payment details returned from backend. Order created.',
+        Colors.orange,
+      );
       cartProvider.clearCart();
       Navigator.pushAndRemoveUntil(
         context,
@@ -192,21 +233,25 @@ class _CheckOutPageState extends State<CheckOutPage> {
   }
 
   void _snack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
   }
 
-  Widget _buildAddressField(String label, TextEditingController ctrl,
-      {String hint = ''}) {
+  Widget _buildAddressField(
+    String label,
+    TextEditingController ctrl, {
+    String hint = '',
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 4),
           Container(
             decoration: BoxDecoration(
@@ -220,7 +265,9 @@ class _CheckOutPageState extends State<CheckOutPage> {
                 hintText: hint.isEmpty ? label : hint,
                 hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -233,11 +280,50 @@ class _CheckOutPageState extends State<CheckOutPage> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>().cart;
+    final auth = context.watch<AuthProvider>();
+    final productProvider = context.watch<ProductProvider>();
     final cartLoading = context.watch<CartProvider>().isLoading;
     final orderLoading = context.watch<OrderProvider>().isLoading;
-    final items = cart?.items ?? [];
+    final rawItems = cart?.items ?? [];
+
+    Product? findFullProduct(String id) {
+      try {
+        return productProvider.products.firstWhere((p) => p.id == id);
+      } catch (_) {
+        try {
+          return productProvider.trendingProducts.firstWhere((p) => p.id == id);
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    final items = rawItems.map((item) {
+      final full = findFullProduct(item.product.id);
+      if (full != null) {
+        return CartItem(
+          id: item.id,
+          product: full,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+        );
+      }
+      return item;
+    }).toList();
+
     final subtotal = _calcTotal(items);
     final total = subtotal; // shipping free
+
+    final currentUser = auth.currentUser;
+    Address? defaultAddress;
+    if (currentUser != null && currentUser.addresses.isNotEmpty) {
+      try {
+        defaultAddress = currentUser.addresses.firstWhere((a) => a.isDefault);
+      } catch (e) {
+        defaultAddress = currentUser.addresses.first;
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.tertiaryColor,
@@ -259,7 +345,9 @@ class _CheckOutPageState extends State<CheckOutPage> {
                     const Text(
                       'Checkout',
                       style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -285,9 +373,10 @@ class _CheckOutPageState extends State<CheckOutPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1)),
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -296,27 +385,88 @@ class _CheckOutPageState extends State<CheckOutPage> {
                       const Text(
                         'Shipping Address',
                         style: TextStyle(
-                            fontSize: 20,
-                            color: Color(0xff00113A),
-                            fontWeight: FontWeight.w600),
+                          fontSize: 20,
+                          color: Color(0xff00113A),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _buildAddressField('Street', _streetCtrl,
-                          hint: '123 Example Street'),
-                      _buildAddressField('City', _cityCtrl,
-                          hint: 'Lagos'),
-                      Row(
-                        children: [
-                          Expanded(
-                              child: _buildAddressField('State', _stateCtrl,
-                                  hint: 'Lagos')),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: _buildAddressField('Zip Code', _zipCtrl,
-                                  hint: '100001')),
-                        ],
-                      ),
-                      _buildAddressField('Country', _countryCtrl),
+                      if (defaultAddress != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF3F3F6),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: AppColors.primaryColor,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${defaultAddress.street}, ${defaultAddress.city}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${defaultAddress.state}, ${defaultAddress.zipCode}\n${defaultAddress.country}',
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              ),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        _buildAddressField(
+                          'Street',
+                          _streetCtrl,
+                          hint: '123 Example Street',
+                        ),
+                        _buildAddressField('City', _cityCtrl, hint: 'Lagos'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildAddressField(
+                                'State',
+                                _stateCtrl,
+                                hint: 'Lagos',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildAddressField(
+                                'Zip Code',
+                                _zipCtrl,
+                                hint: '100001',
+                              ),
+                            ),
+                          ],
+                        ),
+                        _buildAddressField('Country', _countryCtrl),
+                      ],
                     ],
                   ),
                 ),
@@ -331,9 +481,10 @@ class _CheckOutPageState extends State<CheckOutPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1)),
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
                     ],
                   ),
                   child: Row(
@@ -344,27 +495,36 @@ class _CheckOutPageState extends State<CheckOutPage> {
                           color: AppColors.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.payment,
-                            color: AppColors.primaryColor, size: 28),
+                        child: Icon(
+                          Icons.payment,
+                          color: AppColors.primaryColor,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Paystack',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: Color(0xff00113A))),
-                            Text('Secure payment via Paystack',
-                                style: TextStyle(
-                                    color: Colors.grey[600], fontSize: 13)),
+                            const Text(
+                              'Paystack',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: Color(0xff00113A),
+                              ),
+                            ),
+                            Text(
+                              'Secure payment via Paystack',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Icon(Icons.verified_user,
-                          color: Colors.green[600]),
+                      Icon(Icons.verified_user, color: Colors.green[600]),
                     ],
                   ),
                 ),
@@ -379,9 +539,10 @@ class _CheckOutPageState extends State<CheckOutPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1)),
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -390,14 +551,18 @@ class _CheckOutPageState extends State<CheckOutPage> {
                       const Text(
                         'Order Summary',
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w600),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (cartLoading)
                         const Center(child: CircularProgressIndicator())
                       else if (items.isEmpty)
-                        const Text('Your cart is empty.',
-                            style: TextStyle(color: Colors.grey))
+                        const Text(
+                          'Your cart is empty.',
+                          style: TextStyle(color: Colors.grey),
+                        )
                       else
                         ListView.separated(
                           shrinkWrap: true,
@@ -418,15 +583,18 @@ class _CheckOutPageState extends State<CheckOutPage> {
                                   ),
                                   child: item.product.images.isNotEmpty
                                       ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Image.network(
                                             item.product.images.first,
                                             fit: BoxFit.cover,
                                           ),
                                         )
-                                      : const Icon(Icons.image,
-                                          color: Colors.grey),
+                                      : const Icon(
+                                          Icons.image,
+                                          color: Colors.grey,
+                                        ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -434,24 +602,30 @@ class _CheckOutPageState extends State<CheckOutPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(item.product.name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14)),
                                       Text(
-                                          'Qty: ${item.quantity}'
-                                          '${item.size != null ? ' | Size: ${item.size}' : ''}'
-                                          '${item.color != null ? ' | ${item.color}' : ''}',
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xff64748B))),
+                                        item.product.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Qty: ${item.quantity}'
+                                        '${item.size != null ? ' | Size: ${item.size}' : ''}'
+                                        '${item.color != null ? ' | ${item.color}' : ''}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xff64748B),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                                 Text(
                                   '₦${(item.product.price * item.quantity).toStringAsFixed(0)}',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             );
@@ -460,25 +634,36 @@ class _CheckOutPageState extends State<CheckOutPage> {
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
-                      _summaryRow('Subtotal',
-                          '₦${subtotal.toStringAsFixed(0)}'),
+                      _summaryRow(
+                        'Subtotal',
+                        '₦${subtotal.toStringAsFixed(0)}',
+                      ),
                       const SizedBox(height: 8),
-                      _summaryRow('Shipping', 'FREE',
-                          valueColor: AppColors.primaryColor),
+                      _summaryRow(
+                        'Shipping',
+                        'FREE',
+                        valueColor: AppColors.primaryColor,
+                      ),
                       const SizedBox(height: 12),
                       const Divider(),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total',
-                              style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold)),
-                          Text('₦${total.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Total',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '₦${total.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -498,8 +683,9 @@ class _CheckOutPageState extends State<CheckOutPage> {
                           const Text(
                             'SECURE ENCRYPTED CHECKOUT',
                             style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xff94A3B8)),
+                              fontSize: 10,
+                              color: Color(0xff94A3B8),
+                            ),
                           ),
                         ],
                       ),
@@ -515,8 +701,12 @@ class _CheckOutPageState extends State<CheckOutPage> {
     );
   }
 
-  Widget _stepBox(String label, IconData icon, bool done,
-      {bool isActive = false}) {
+  Widget _stepBox(
+    String label,
+    IconData icon,
+    bool done, {
+    bool isActive = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       height: 85,
@@ -525,11 +715,10 @@ class _CheckOutPageState extends State<CheckOutPage> {
         color: isActive
             ? AppColors.primaryColor
             : done
-                ? Color(0xff002366).withOpacity(0.20)
-                : Colors.white,
+            ? Color(0xff002366).withOpacity(0.20)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: Color(0xff002366).withOpacity(0.30)),
+        border: Border.all(color: Color(0xff002366).withOpacity(0.30)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -539,22 +728,27 @@ class _CheckOutPageState extends State<CheckOutPage> {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.secondaryColor),
-                  child: const Icon(Icons.check,
-                      size: 14, color: Colors.white),
+                    shape: BoxShape.circle,
+                    color: AppColors.secondaryColor,
+                  ),
+                  child: const Icon(Icons.check, size: 14, color: Colors.white),
                 )
-              : Icon(icon,
-                  color: isActive ? Colors.white : const Color(0xffCBD5E1)),
+              : Icon(
+                  icon,
+                  color: isActive ? Colors.white : const Color(0xffCBD5E1),
+                ),
           const SizedBox(height: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: isActive
-                      ? Colors.white
-                      : done
-                          ? Colors.black87
-                          : const Color(0xff94A3B8))),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isActive
+                  ? Colors.white
+                  : done
+                  ? Colors.black87
+                  : const Color(0xff94A3B8),
+            ),
+          ),
         ],
       ),
     );
@@ -565,16 +759,17 @@ class _CheckOutPageState extends State<CheckOutPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(fontSize: 15)),
-        Text(value,
-            style: TextStyle(
-                fontSize: 15,
-                color: valueColor ?? Colors.black87)),
+        Text(
+          value,
+          style: TextStyle(fontSize: 15, color: valueColor ?? Colors.black87),
+        ),
       ],
     );
   }
 }
 
-class _PaymentPollingDialog extends StatefulWidget {
+class PaymentWebViewScreen extends StatefulWidget {
+  final String paymentUrl;
   final String reference;
   final String token;
   final double totalPrice;
@@ -584,7 +779,9 @@ class _PaymentPollingDialog extends StatefulWidget {
   final CartProvider cartProvider;
   final NotificationProvider notificationProvider;
 
-  const _PaymentPollingDialog({
+  const PaymentWebViewScreen({
+    super.key,
+    required this.paymentUrl,
     required this.reference,
     required this.token,
     required this.totalPrice,
@@ -596,21 +793,54 @@ class _PaymentPollingDialog extends StatefulWidget {
   });
 
   @override
-  State<_PaymentPollingDialog> createState() => _PaymentPollingDialogState();
+  State<PaymentWebViewScreen> createState() => _PaymentWebViewScreenState();
 }
 
-class _PaymentPollingDialogState extends State<_PaymentPollingDialog> {
+class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
+  late final WebViewController _controller;
   Timer? _timer;
   bool _isVerifying = false;
 
   @override
   void initState() {
     super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            final url = request.url.toLowerCase();
+            // Paystack callback usually contains reference or trxref
+            if (url.contains('verify') ||
+                url.contains('callback') ||
+                url.contains(widget.reference.toLowerCase())) {
+              // Attempt to auto-verify based on url redirection
+              _handleSuccess();
+              // Allow navigation to proceed so the backend can also catch it
+            }
+            if (url.contains('cancel')) {
+              if (mounted) Navigator.pop(context, false);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+          onPageFinished: (url) {
+            final lowerUrl = url.toLowerCase();
+            if (lowerUrl.contains('verify') ||
+                lowerUrl.contains('callback') ||
+                lowerUrl.contains(widget.reference.toLowerCase())) {
+              _handleSuccess();
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.paymentUrl));
+
     _startPolling();
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(const Duration(milliseconds: 2500), (timer) async {
+    _timer = Timer.periodic(const Duration(milliseconds: 3000), (timer) async {
       _checkStatus();
     });
   }
@@ -618,35 +848,18 @@ class _PaymentPollingDialogState extends State<_PaymentPollingDialog> {
   Future<void> _checkStatus() async {
     if (_isVerifying) return;
     if (!mounted) return;
+
     setState(() {
       _isVerifying = true;
     });
+
     try {
-      final success = await widget.orderProvider.verifyPayment(widget.reference, widget.token);
+      final success = await widget.orderProvider.verifyPayment(
+        widget.reference,
+        widget.token,
+      );
       if (success && mounted) {
-        _timer?.cancel();
-        await closeInAppWebView();
-        
-        // Buyer Notification
-        widget.notificationProvider.addNotification(
-          title: 'Order Placed successfully! 🎉',
-          body: 'Your order #${widget.reference} for ₦${widget.totalPrice.toStringAsFixed(0)} was successfully paid and placed.',
-          type: 'buyer_order',
-        );
-
-        // Seller/Product Notifications
-        for (final ci in widget.cartItems) {
-          widget.notificationProvider.addNotification(
-            title: 'New Order Received! 🛍️',
-            body: 'User "${widget.buyerName}" ordered ${ci.quantity} x "${ci.product.name}". Total: ₦${(ci.product.price * ci.quantity).toStringAsFixed(0)}. Ref: ${widget.reference}.',
-            type: 'seller_order',
-          );
-        }
-
-        widget.cartProvider.clearCart();
-        if (mounted) {
-          Navigator.pop(context, true); // Dismiss dialog with success result
-        }
+        _handleSuccess();
       }
     } catch (_) {
       // Ignored
@@ -659,6 +872,37 @@ class _PaymentPollingDialogState extends State<_PaymentPollingDialog> {
     }
   }
 
+  void _handleSuccess() {
+    if (!_isVerifying) {
+      setState(() {
+        _isVerifying = true;
+      });
+    }
+
+    _timer?.cancel();
+
+    widget.notificationProvider.addNotification(
+      title: 'Order Placed successfully! 🎉',
+      body:
+          'Your order #${widget.reference} for ₦${widget.totalPrice.toStringAsFixed(0)} was successfully paid and placed.',
+      type: 'buyer_order',
+    );
+
+    for (final ci in widget.cartItems) {
+      widget.notificationProvider.addNotification(
+        title: 'New Order Received! 🛍️',
+        body:
+            'User "${widget.buyerName}" ordered ${ci.quantity} x "${ci.product.name}". Total: ₦${(ci.product.price * ci.quantity).toStringAsFixed(0)}. Ref: ${widget.reference}.',
+        type: 'seller_order',
+      );
+    }
+
+    widget.cartProvider.clearCart();
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -667,67 +911,17 @@ class _PaymentPollingDialogState extends State<_PaymentPollingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Row(
-        children: [
-          Icon(Icons.security, color: AppColors.primaryColor),
-          SizedBox(width: 8),
-          Text('Verify Payment'),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Please complete your payment in the browser window.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 20),
-          const SizedBox(
-            width: 36,
-            height: 36,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Auto-verifying Ref: ${widget.reference}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey, fontFamily: 'monospace'),
-          ),
-          if (widget.orderProvider.error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              widget.orderProvider.error!,
-              style: const TextStyle(fontSize: 12, color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-          ]
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            _timer?.cancel();
-            await closeInAppWebView();
-            if (mounted) {
-              Navigator.pop(context, false); // Dismiss with cancel result
-            }
-          },
-          child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Complete Payment',
+          style: TextStyle(color: Colors.black87, fontSize: 16),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-          onPressed: _isVerifying ? null : _checkStatus,
-          child: const Text('Verify Now', style: TextStyle(color: Colors.white)),
-        ),
-      ],
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        elevation: 1,
+      ),
+      body: SafeArea(child: WebViewWidget(controller: _controller)),
     );
   }
 }

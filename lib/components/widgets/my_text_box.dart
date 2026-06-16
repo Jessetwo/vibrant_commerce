@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class MyTextBox extends StatelessWidget {
+class MyTextBox extends StatefulWidget {
   final String? title;
   final String hintText;
   final IconData? prefixIcon;
@@ -22,12 +22,25 @@ class MyTextBox extends StatelessWidget {
   });
 
   @override
+  State<MyTextBox> createState() => _MyTextBoxState();
+}
+
+class _MyTextBoxState extends State<MyTextBox> {
+  late bool _isObscured;
+
+  @override
+  void initState() {
+    super.initState();
+    _isObscured = widget.obscureText ?? false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title ?? '',
+          widget.title ?? '',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
@@ -40,19 +53,37 @@ class MyTextBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
-            controller: controller,
-            obscureText: obscureText ?? false,
-            onChanged: onChanged,
-            onSubmitted: onSubmitted,
+            controller: widget.controller,
+            obscureText: _isObscured,
+            onChanged: widget.onChanged,
+            onSubmitted: widget.onSubmitted,
             decoration: InputDecoration(
-              suffixIcon: Icon(suffixIcon, color: Colors.grey.withOpacity(0.6)),
-              prefixIcon: Icon(prefixIcon, color: Colors.grey.withOpacity(0.6)),
+              suffixIcon: widget.suffixIcon != null || widget.obscureText == true
+                  ? GestureDetector(
+                      onTap: () {
+                        if (widget.obscureText == true) {
+                          setState(() {
+                            _isObscured = !_isObscured;
+                          });
+                        }
+                      },
+                      child: Icon(
+                        widget.obscureText == true 
+                            ? (_isObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined)
+                            : widget.suffixIcon,
+                        color: Colors.grey.withOpacity(0.6),
+                      ),
+                    )
+                  : null,
+              prefixIcon: widget.prefixIcon != null 
+                  ? Icon(widget.prefixIcon, color: Colors.grey.withOpacity(0.6)) 
+                  : null,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
               border: InputBorder.none,
-              hintText: hintText,
+              hintText: widget.hintText,
               hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
             ),
           ),

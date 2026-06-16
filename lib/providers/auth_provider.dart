@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:vibrant_commerce/models/user.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -16,6 +17,43 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _token != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+
+  Future<bool> loginWithGoogle() async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User cancelled sign-in
+        _setLoading(false);
+        return false;
+      }
+
+      final String name = googleUser.displayName ?? '';
+      final String email = googleUser.email;
+      final String avatar = googleUser.photoUrl ?? '';
+      final String providerId = googleUser.id;
+
+      // Delegate to the existing socialLogin method
+      final success = await socialLogin(
+        name: name,
+        email: email,
+        avatar: avatar,
+        provider: 'google',
+        providerId: providerId,
+      );
+      
+      return success;
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
 
   Map<String, String> get _headers {
     final headers = {

@@ -5,8 +5,10 @@ import 'package:vibrant_commerce/components/assets/category_images.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/components/widgets/product_image.dart';
 import 'package:vibrant_commerce/models/cart.dart';
+import 'package:vibrant_commerce/models/product.dart';
 import 'package:vibrant_commerce/providers/auth_provider.dart';
 import 'package:vibrant_commerce/providers/cart_provider.dart';
+import 'package:vibrant_commerce/providers/product_provider.dart';
 import 'package:vibrant_commerce/screens/main_screens/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
@@ -32,10 +34,12 @@ class _CartPageState extends State<CartPage> {
     final cart = context.read<CartProvider>();
     final ok = await cart.removeFromCart(productId, token);
     if (mounted && !ok) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(cart.error ?? 'Could not remove item.'),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(cart.error ?? 'Could not remove item.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -49,8 +53,35 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final cartProvider = context.watch<CartProvider>();
+    final productProvider = context.watch<ProductProvider>();
     final cart = cartProvider.cart;
-    final items = cart?.items ?? [];
+    final rawItems = cart?.items ?? [];
+
+    Product? findFullProduct(String id) {
+      try {
+        return productProvider.products.firstWhere((p) => p.id == id);
+      } catch (_) {
+        try {
+          return productProvider.trendingProducts.firstWhere((p) => p.id == id);
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    final items = rawItems.map((item) {
+      final full = findFullProduct(item.product.id);
+      if (full != null) {
+        return CartItem(
+          id: item.id,
+          product: full,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+        );
+      }
+      return item;
+    }).toList();
 
     // Compute total
     double total = 0;
@@ -85,26 +116,24 @@ class _CartPageState extends State<CartPage> {
                 child: !auth.isAuthenticated
                     ? _buildNotLoggedIn()
                     : cartProvider.isLoading && items.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : items.isEmpty
-                            ? _buildEmptyCart()
-                            : ListView.separated(
-                                itemCount: items.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 14),
-                                itemBuilder: (context, index) {
-                                  final item = items[index];
-                                  return _CartItemCard(
-                                    item: item,
-                                    token: auth.token!,
-                                    onRemove: () => _removeItem(
-                                        item.product.id, auth.token!),
-                                    onQuantityChanged: (newQty) =>
-                                        _updateQuantity(
-                                            item.id, newQty, auth.token!),
-                                  );
-                                },
-                              ),
+                    ? const Center(child: CircularProgressIndicator())
+                    : items.isEmpty
+                    ? _buildEmptyCart()
+                    : ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 14),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return _CartItemCard(
+                            item: item,
+                            token: auth.token!,
+                            onRemove: () =>
+                                _removeItem(item.product.id, auth.token!),
+                            onQuantityChanged: (newQty) =>
+                                _updateQuantity(item.id, newQty, auth.token!),
+                          );
+                        },
+                      ),
               ),
 
               // ── Summary & Checkout ───────────────────────
@@ -126,17 +155,21 @@ class _CartPageState extends State<CartPage> {
                   ),
                   child: Column(
                     children: [
-                      _summaryRow('Subtotal',
-                          'N${total.toStringAsFixed(2)}'),
+                      _summaryRow('Subtotal', 'N${total.toStringAsFixed(2)}'),
                       const SizedBox(height: 10),
-                      _summaryRow('Shipping', 'FREE',
-                          valueColor: AppColors.primaryColor),
+                      _summaryRow(
+                        'Shipping',
+                        'FREE',
+                        valueColor: AppColors.primaryColor,
+                      ),
                       const SizedBox(height: 10),
                       const Divider(height: 1),
                       const SizedBox(height: 10),
-                      _summaryRow('Total',
-                          'N${total.toStringAsFixed(2)}',
-                          isBold: true),
+                      _summaryRow(
+                        'Total',
+                        'N${total.toStringAsFixed(2)}',
+                        isBold: true,
+                      ),
                     ],
                   ),
                 ),
@@ -144,8 +177,9 @@ class _CartPageState extends State<CartPage> {
                 MyButton(
                   title: 'Proceed to Checkout',
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => CheckOutPage()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => CheckOutPage()),
+                    );
                   },
                   color: AppColors.primaryColor,
                 ),
@@ -158,23 +192,31 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _summaryRow(String label, String value,
-      {Color? valueColor, bool isBold = false}) {
+  Widget _summaryRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isBold = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: isBold ? 17 : 14,
-                color: isBold ? Colors.black : Colors.grey[600],
-                fontWeight:
-                    isBold ? FontWeight.bold : FontWeight.normal)),
-        Text(value,
-            style: TextStyle(
-                fontSize: isBold ? 17 : 14,
-                color: valueColor ?? Colors.black,
-                fontWeight:
-                    isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isBold ? 17 : 14,
+            color: isBold ? Colors.black : Colors.grey[600],
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isBold ? 17 : 14,
+            color: valueColor ?? Colors.black,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }
@@ -184,18 +226,22 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart_outlined,
-              size: 80, color: Colors.grey[300]),
+          Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text('Your cart is empty',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[500])),
+          Text(
+            'Your cart is empty',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[500],
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Browse products and add something you love!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[400])),
+          Text(
+            'Browse products and add something you love!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+          ),
         ],
       ),
     );
@@ -208,11 +254,14 @@ class _CartPageState extends State<CartPage> {
         children: [
           Icon(Icons.lock_outline_rounded, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text('Login to view your cart',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[600])),
+          Text(
+            'Login to view your cart',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
         ],
       ),
     );
@@ -259,7 +308,9 @@ class _CartItemCard extends StatelessWidget {
               width: 88,
               height: 88,
               child: ProductImage(
-                imagePath: product.images.isNotEmpty ? product.images.first : '',
+                imagePath: product.images.isNotEmpty
+                    ? product.images.first
+                    : '',
                 category: product.category,
                 fit: BoxFit.cover,
               ),
@@ -279,7 +330,9 @@ class _CartItemCard extends StatelessWidget {
                       child: Text(
                         product.name.isNotEmpty ? product.name : 'Product',
                         style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -288,8 +341,11 @@ class _CartItemCard extends StatelessWidget {
                       onTap: onRemove,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        child: const Icon(Icons.delete_outline_rounded,
-                            color: Colors.red, size: 20),
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -303,7 +359,9 @@ class _CartItemCard extends StatelessWidget {
                         if (item.color != null) 'Color: ${item.color}',
                       ].join(' | '),
                       style: const TextStyle(
-                          fontSize: 12, color: Color(0xff757682)),
+                        fontSize: 12,
+                        color: Color(0xff757682),
+                      ),
                     ),
                   ),
                 const SizedBox(height: 10),
@@ -313,14 +371,17 @@ class _CartItemCard extends StatelessWidget {
                     Text(
                       'N${(product.price * item.quantity).toStringAsFixed(2)}',
                       style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryColor),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                      ),
                     ),
                     // Quantity stepper
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xffF3F3F6),
                         borderRadius: BorderRadius.circular(99),
@@ -329,21 +390,21 @@ class _CartItemCard extends StatelessWidget {
                         children: [
                           _stepBtn(
                             icon: Icons.remove,
-                            onTap: () =>
-                                onQuantityChanged(item.quantity - 1),
+                            onTap: () => onQuantityChanged(item.quantity - 1),
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text('${item.quantity}',
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              '${item.quantity}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           _stepBtn(
                             icon: Icons.add,
-                            onTap: () =>
-                                onQuantityChanged(item.quantity + 1),
+                            onTap: () => onQuantityChanged(item.quantity + 1),
                           ),
                         ],
                       ),
@@ -358,8 +419,7 @@ class _CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _stepBtn(
-      {required IconData icon, required VoidCallback onTap}) {
+  Widget _stepBtn({required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

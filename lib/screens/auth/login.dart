@@ -61,6 +61,27 @@ class _LoginState extends State<Login> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.loginWithGoogle();
+    
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } else if (authProvider.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
@@ -181,6 +202,7 @@ class _LoginState extends State<Login> {
                           child: Social(
                             title: 'Google',
                             assetPath: 'assets/images/google.png',
+                            onTap: _handleGoogleSignIn,
                           ),
                         ),
                         const SizedBox(width: 16),

@@ -5,6 +5,9 @@ import 'package:vibrant_commerce/components/widgets/orders.dart';
 import 'package:vibrant_commerce/models/order.dart';
 import 'package:vibrant_commerce/providers/auth_provider.dart';
 import 'package:vibrant_commerce/providers/order_provider.dart';
+import 'package:vibrant_commerce/providers/product_provider.dart';
+import 'package:vibrant_commerce/screens/main_screens/order_details_page.dart';
+import 'package:vibrant_commerce/models/product.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -14,7 +17,7 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  // Tab: 0 = All, 1 = On Going, 2 = Completed
+  // Tab: 0 = My Orders, 1 = Customer Orders
   int _selectedTab = 0;
   bool _didFetch = false;
 
@@ -34,22 +37,6 @@ class _OrdersPageState extends State<OrdersPage> {
     if (auth.isAuthenticated && auth.token != null) {
       await context.read<OrderProvider>().getMyOrders(auth.token!);
     }
-  }
-
-  List<Order> _filteredOrders(List<Order> all) {
-    if (_selectedTab == 0) return all;
-    if (_selectedTab == 1) {
-      // On Going = processing / shipped / in_transit / pending
-      return all
-          .where((o) => !['delivered', 'completed', 'cancelled']
-              .contains(o.orderStatus.toLowerCase()))
-          .toList();
-    }
-    // Completed
-    return all
-        .where((o) => ['delivered', 'completed']
-            .contains(o.orderStatus.toLowerCase()))
-        .toList();
   }
 
   _StatusStyle _statusStyle(String status) {
@@ -99,20 +86,47 @@ class _OrdersPageState extends State<OrdersPage> {
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
-  String _imageForOrder(Order order) {
-    if (order.items.isEmpty) return 'assets/images/placeholder.png';
-    final img = order.items.first.image;
-    if (img != null && img.isNotEmpty && img != 'null') return img;
-    return 'assets/images/placeholder.png';
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final orderProvider = context.watch<OrderProvider>();
+    final productProvider = context.watch<ProductProvider>();
     final isLoading = orderProvider.isLoading;
     final allOrders = orderProvider.myOrders;
-    final filtered = _filteredOrders(allOrders);
+    final currentUser = auth.currentUser;
+
+    Product? findFullProduct(String id) {
+      try {
+        return productProvider.products.firstWhere((p) => p.id == id);
+      } catch (_) {
+        try {
+          return productProvider.trendingProducts.firstWhere((p) => p.id == id);
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    // Flatten orders into individual paid products
+    final List<Map<String, dynamic>> paidProducts = [];
+    for (final order in allOrders) {
+      for (final item in order.items) {
+        final isMyOrder = currentUser != null && order.user == currentUser.id;
+        final isCustomerOrder = !isMyOrder;
+        
+        if (_selectedTab == 0 && isMyOrder) {
+          paidProducts.add({
+            'order': order,
+            'item': item,
+          });
+        } else if (_selectedTab == 1 && isCustomerOrder) {
+          paidProducts.add({
+            'order': order,
+            'item': item,
+          });
+        }
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.tertiaryColor,
@@ -137,7 +151,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${allOrders.length} order${allOrders.length == 1 ? '' : 's'} total',
+                    '${paidProducts.length} product${paidProducts.length == 1 ? '' : 's'} total',
                     style:
                         TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
@@ -150,11 +164,9 @@ class _OrdersPageState extends State<OrdersPage> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
-                  _tabChip('All Orders', 0),
+                  _tabChip('My Orders', 0),
                   const SizedBox(width: 10),
-                  _tabChip('On Going', 1),
-                  const SizedBox(width: 10),
-                  _tabChip('Completed', 2),
+                  _tabChip('Customer Orders', 1),
                 ],
               ),
             ),
@@ -171,30 +183,56 @@ class _OrdersPageState extends State<OrdersPage> {
                         ? const Center(child: CircularProgressIndicator())
                         : orderProvider.error != null && allOrders.isEmpty
                             ? _errorState(orderProvider.error!)
-                            : filtered.isEmpty
+                            : allOrders.isEmpty
                                 ? _emptyState()
-                                : ListView.separated(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 8),
-                                    itemCount: filtered.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 16),
-                                    itemBuilder: (_, i) {
-                                      final order = filtered[i];
-                                      final style =
-                                          _statusStyle(order.orderStatus);
-                                      return Orders(
-                                        orderId: order.id,
-                                        date: _formatDate(order.createdAt),
-                                        status: style.label,
-                                        items:
-                                            '${order.items.length} Item${order.items.length == 1 ? '' : 's'}',
-                                        price:
-                                            '₦${order.totalPrice.toStringAsFixed(0)}',
-                                        color: style.bgColor,
-                                        statusColor: style.dotColor,
-                                        statusTextColor: style.textColor,
-                                        imagePath: _imageForOrder(order),
+                                : Builder(
+                                    builder: (context) {
+                                      if (paidProducts.isEmpty) return _emptyState();
+
+                                      return ListView.separated(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 8),
+                                        itemCount: paidProducts.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 16),
+                                        itemBuilder: (_, i) {
+                                          final productData = paidProducts[i];
+                                          final order = productData['order'] as Order;
+                                          final item = productData['item'] as OrderItem;
+                                          
+                                          final style = _statusStyle(order.orderStatus);
+                                          final fullProduct = findFullProduct(item.product);
+                                          
+                                          final img = (fullProduct != null && fullProduct.images.isNotEmpty) 
+                                              ? fullProduct.images.first 
+                                              : item.image;
+                                              
+                                          final displayImg = (img != null && img.isNotEmpty && img != 'null') 
+                                              ? img 
+                                              : 'assets/images/placeholder.png';
+
+                                          return GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => OrderDetailsPage(order: order),
+                                                ),
+                                              );
+                                            },
+                                            child: Orders(
+                                              orderId: order.id,
+                                              date: _formatDate(order.createdAt),
+                                              status: style.label,
+                                              items: '${item.name} (x${item.quantity})',
+                                              price: '₦${(item.price * item.quantity).toStringAsFixed(0)}',
+                                              color: style.bgColor,
+                                              statusColor: style.dotColor,
+                                              statusTextColor: style.textColor,
+                                              imagePath: displayImg,
+                                            ),
+                                          );
+                                        },
                                       );
                                     },
                                   ),

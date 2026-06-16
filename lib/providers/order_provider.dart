@@ -64,6 +64,7 @@ class OrderProvider with ChangeNotifier {
     try {
       final Map<String, dynamic> requestBody = {
         'items': items.map((i) => i.toJson()).toList(),
+        'orderItems': items.map((i) => i.toJson()).toList(),
         'shippingAddress': shippingAddress.toJson(),
         'totalPrice': totalPrice,
       };
@@ -78,6 +79,7 @@ class OrderProvider with ChangeNotifier {
       );
 
       final responseData = json.decode(response.body);
+      print('CREATE_ORDER_RESPONSE: $responseData');
       if (response.statusCode == 200 || response.statusCode == 201) {
         final orderData = responseData['order'] ?? responseData;
         final order = Order.fromJson(orderData);
@@ -91,7 +93,8 @@ class OrderProvider with ChangeNotifier {
         _setLoading(false);
         return null;
       }
-    } catch (e) {
+    } catch (e, st) {
+      print('CREATE_ORDER_ERROR: $e\n$st');
       _setError(e.toString());
       _setLoading(false);
       return null;
@@ -109,8 +112,25 @@ class OrderProvider with ChangeNotifier {
       );
 
       final responseData = json.decode(response.body);
+      print('MY_ORDERS_RESPONSE: $responseData');
       if (response.statusCode == 200) {
-        final List rawOrders = responseData is List ? responseData : [];
+        List rawOrders = [];
+        if (responseData is List) {
+          rawOrders = responseData;
+        } else if (responseData is Map) {
+          if (responseData['orders'] is List) {
+            rawOrders = responseData['orders'];
+          } else if (responseData['data'] is List) {
+            rawOrders = responseData['data'];
+          } else {
+            for (var value in responseData.values) {
+              if (value is List) {
+                rawOrders = value;
+                break;
+              }
+            }
+          }
+        }
         _myOrders = rawOrders.map((o) => Order.fromJson(o)).toList();
         _setLoading(false);
         return _myOrders;
@@ -119,7 +139,8 @@ class OrderProvider with ChangeNotifier {
         _setLoading(false);
         return [];
       }
-    } catch (e) {
+    } catch (e, st) {
+      print('GET_MY_ORDERS_ERROR: $e\n$st');
       _setError(e.toString());
       _setLoading(false);
       return [];

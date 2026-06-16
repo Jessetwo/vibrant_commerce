@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 class Social extends StatelessWidget {
   final String title;
   final String assetPath;
-  const Social({super.key, required this.title, required this.assetPath});
+  final VoidCallback? onTap;
+  const Social({super.key, required this.title, required this.assetPath, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: 140,
       height: 52,
       decoration: BoxDecoration(
@@ -25,6 +28,6 @@ class Social extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
