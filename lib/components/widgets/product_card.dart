@@ -9,6 +9,7 @@ class ProductCard extends StatelessWidget {
   final double rating;
   final int reviewCount;
   final VoidCallback? ontap;
+  final VoidCallback? onAddToCart;
 
   const ProductCard({
     super.key,
@@ -18,6 +19,7 @@ class ProductCard extends StatelessWidget {
     this.rating = 0.0,
     this.reviewCount = 0,
     this.ontap,
+    this.onAddToCart,
   });
 
   @override
@@ -125,17 +127,20 @@ class ProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: AppColors.secondaryColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart,
-                            size: 14,
-                            color: Colors.white,
+                        GestureDetector(
+                          onTap: onAddToCart,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.shopping_cart,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],

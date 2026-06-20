@@ -72,10 +72,12 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
     setState(() => _isSubmittingReview = true);
     final pp = Provider.of<ProductProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
     final ok = await pp.createReview(
       productId: widget.product.id,
       rating: _submitRating,
       comment: _commentController.text.trim(),
+      name: auth.currentUser?.name ?? 'Verified Customer',
       token: token,
     );
     if (!mounted) return;
@@ -833,6 +835,13 @@ class _ProductDetailsState extends State<ProductDetails> {
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                 content: Text('Please log in to add items to cart.'),
                                 backgroundColor: Colors.red,
+                              ));
+                              return;
+                            }
+                            if (widget.product.user == auth.currentUser!.id) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                content: Text('You cannot buy your own product.'),
+                                backgroundColor: Colors.orange,
                               ));
                               return;
                             }

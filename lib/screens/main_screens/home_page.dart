@@ -6,6 +6,7 @@ import 'package:vibrant_commerce/components/widgets/product_card.dart';
 import 'package:vibrant_commerce/screens/main_screens/product_details.dart';
 import 'package:vibrant_commerce/providers/product_provider.dart';
 import 'package:vibrant_commerce/providers/auth_provider.dart';
+import 'package:vibrant_commerce/providers/cart_provider.dart';
 import 'package:vibrant_commerce/providers/notification_provider.dart';
 import 'package:vibrant_commerce/screens/main_screens/notifications_page.dart';
 
@@ -475,6 +476,54 @@ class _HomePageState extends State<HomePage> {
                                     ProductDetails(product: product),
                               ),
                             );
+                          },
+                          onAddToCart: () async {
+                            final auth = Provider.of<AuthProvider>(context, listen: false);
+                            if (!auth.isAuthenticated || auth.currentUser == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please login to add to cart')),
+                              );
+                              return;
+                            }
+                            
+                            if (product.user == auth.currentUser!.id) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('You cannot buy your own product'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+                            
+                            final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
+                            // Check if product is already in cart
+                            final isInCart = cartProvider.cart?.items.any((item) => item.product.id == product.id) ?? false;
+                            
+                            if (isInCart) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Product already in cart'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final success = await cartProvider.addToCart(
+                              productId: product.id,
+                              token: auth.token!,
+                            );
+                            
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(success ? 'Added to cart' : 'Failed to add to cart'),
+                                  backgroundColor: success ? Colors.green : Colors.red,
+                                ),
+                              );
+                            }
                           },
                         );
                       },

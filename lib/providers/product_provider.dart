@@ -369,6 +369,7 @@ class ProductProvider with ChangeNotifier {
     required String productId,
     required int rating,
     required String comment,
+    required String name,
     required String token,
   }) async {
     _setLoading(true);
@@ -380,6 +381,7 @@ class ProductProvider with ChangeNotifier {
         body: json.encode({
           'rating': rating,
           'comment': comment,
+          'name': name,
         }),
       );
 

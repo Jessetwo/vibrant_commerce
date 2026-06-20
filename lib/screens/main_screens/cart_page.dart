@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vibrant_commerce/components/assets/app_colors.dart';
-import 'package:vibrant_commerce/components/assets/category_images.dart';
 import 'package:vibrant_commerce/components/widgets/my_button.dart';
 import 'package:vibrant_commerce/components/widgets/product_image.dart';
 import 'package:vibrant_commerce/models/cart.dart';

@@ -112,14 +112,16 @@ class _OrdersPageState extends State<OrdersPage> {
     for (final order in allOrders) {
       for (final item in order.items) {
         final isMyOrder = currentUser != null && order.user == currentUser.id;
-        final isCustomerOrder = !isMyOrder;
+        
+        final fullProduct = findFullProduct(item.product);
+        final isMyProduct = fullProduct != null && currentUser != null && fullProduct.user == currentUser.id;
         
         if (_selectedTab == 0 && isMyOrder) {
           paidProducts.add({
             'order': order,
             'item': item,
           });
-        } else if (_selectedTab == 1 && isCustomerOrder) {
+        } else if (_selectedTab == 1 && isMyProduct) {
           paidProducts.add({
             'order': order,
             'item': item,
